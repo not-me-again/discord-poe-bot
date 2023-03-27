@@ -433,7 +433,7 @@ async function cacheSanityCheck(authorId, interaction) {
     if (typeof threadId == "string") {
         const thread = interaction?.channel;
         if (thread && (thread.id == threadId))
-            thread.setName(`${displayName} - (${authorId})`);
+            thread.setName(`${interaction.user.username} & ${displayName} - (${authorId})`);
     }
 
     if (messageHistory.length <= 0) {
@@ -482,8 +482,8 @@ async function handleMessage(channel, author, message) {
             return;
         else {
             const thread = message?.channel;
-            if (thread)
-                thread.setName(`${botConfig.displayName} - (${authorId})`);
+            if (thread && (typeof botConfig.displayName == "string"))
+                thread.setName(`${author.username} & ${botConfig.displayName} - (${authorId})`);
         }
 
         const loadingReaction = await message.react(CONFIG.LOADING_EMOJI_ID);
