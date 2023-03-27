@@ -480,6 +480,11 @@ async function handleMessage(channel, author, message) {
         const threadId = dbHandler.get("threadId");
         if (threadId != channelId)
             return;
+        else {
+            const thread = interaction?.channel;
+            if (thread)
+                thread.setName(`${displayName} - (${authorId})`);
+        }
 
         const loadingReaction = await message.react(CONFIG.LOADING_EMOJI_ID);
 
@@ -720,27 +725,27 @@ async function handleConfigPublish(cache, interaction) {
 
     let confData = {};
 
-    if ((typeof id == "string") && (id.length > 0)) {
-        const dbConf = new ConfigDB(id);
-
-        const isPublic = !!dbConf.get("public");
-        if (!isPublic)
-            return await updateInteraction(interaction, {
-                content: "This configuration is not set to public\nPlease load it, and make sure you save it with `public:True` if you plan to publish it.",
-                ephemeral: true
-            });
-
-        const confAuthor = dbConf.get("authorId");
-        if (confAuthor != interaction.user.id)
-            return await updateInteraction(interaction, {
-                content: "You do not have permission to publish this configuration",
-                ephemeral: true
-            });
-
-        for (let property of confProps)
-            confData[property] = dbConf.get(property);
-    } else
+    if ((typeof id != "string") || (id.length <= 0))
         return;
+
+    const dbConf = new ConfigDB(id);
+
+    const isPublic = !!dbConf.get("public");
+    if (!isPublic)
+        return await updateInteraction(interaction, {
+            content: "This configuration is not set to public\nPlease load it, and make sure you save it with `public:True` if you plan to publish it.",
+            ephemeral: true
+        });
+
+    const confAuthor = dbConf.get("authorId");
+    if (confAuthor != interaction.user.id)
+        return await updateInteraction(interaction, {
+            content: "You do not have permission to publish this configuration",
+            ephemeral: true
+        });
+
+    for (let property of confProps)
+        confData[property] = dbConf.get(property);
 
     const messageButtons = new ActionRowBuilder()
         .addComponents(
@@ -750,7 +755,18 @@ async function handleConfigPublish(cache, interaction) {
                 .setStyle(ButtonStyle.Primary)
         );
 
-    await publishChannel.send({ embeds: [ generateConfigEmbed(confData) ], components: [ messageButtons ] });
+    let publishMessage;
+    let publishMessageId = dbConf.get("publishMessageId");
+    if (typeof publishMessageId == "string")
+        publishMessage = await publishChannel.messages.cache.find(m => m.id == publishMessageId)
+    
+    const publishData = { embeds: [ generateConfigEmbed(confData) ], components: [ messageButtons ] };
+    if (typeof publishMessage == "object")
+        await publishMessage.edit(publishData);
+    else
+        publishMessage = await publishChannel.send(publishData);
+
+    dbConf.set("publishMessageId", publishMessage.id);
 
     await updateInteraction(interaction, { content: "Configuration published", ephemeral: true });
 }
@@ -797,7 +813,7 @@ function generateConfigEmbed(conf) {
         .setColor(CONFIG.EMBED_COLOR)
         .setTitle((typeof conf.name == "string") ? conf.name : null)
         .setThumbnail(conf.avatarUrl)
-        .setDescription(conf.personality)
+        .setDescription((typeof conf.blurb == "string") ? conf.blurb : null)
         .addFields(fields)
         .setFooter((typeof conf.configId == "string") ? { text: conf.configId } : null);
 }

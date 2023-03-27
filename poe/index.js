@@ -297,7 +297,6 @@ class Poe {
     connectSocket(channelData) {
         const socket = new WebSocket(`wss://${this.socketServer}/up/${channelData.boxName}/updates?min_seq=${channelData.minSeq}&channel=${channelData.channel}&hash=${channelData.channelHash}`);
         
-        socket.on("error", err => { throw err; });
         socket.on("open", () => this.log("Websocket connected"));
         socket.on("close", () => this.connectSocket(channelData));
 
@@ -449,6 +448,15 @@ class Poe {
             this.isReplying = true;
             
             let selfMessage = {};
+
+            this.socket.on("error", err => {
+                this.socket.removeEventListener("message");
+                this.socket.removeEventListener("error");
+
+                console.error(err);
+                
+                return reject(`Failed to send message\n${err}`);
+            });
         
             this.socket.on("message", data => {
                 try {
@@ -481,6 +489,10 @@ class Poe {
 
                         this.isReplying = false;
 
+                        messageData.author = this.botType.NAME;
+
+                        delete messageData.linkifiedText;
+                        delete messageData.suggestedReplies;
                         // JAILBREAK STUFF
                         const text = messageData.text;
                         const split = text.split(JAILRBEAK_SEPERATOR);
@@ -490,11 +502,12 @@ class Poe {
                             if (!text.includes(JAILRBEAK_SEPERATOR)) {
                                 this.needsRefresh = true;
                             }
-                            return reject(`No character reply\n\`\`\`\nReceived:\n\`\`\`json\n${JSON.stringify(parsedMessage, undefined, 2)}`);
+                            return reject(`No character reply\n\`\`\`\nReceived:\n\`\`\`json\n${JSON.stringify(messageData, undefined, 2)}`);
                         }
                         // END JAILBREAK STUFF
                     
                         this.socket.removeEventListener("message");
+                        this.socket.removeEventListener("error");
 
                         const responseData = { selfMessage, aiMessage: messageData }
                         this.messageHistory.push(responseData);
