@@ -810,6 +810,7 @@ function generateConfigEmbed(conf) {
     fields.push({ name: "Backend", value: BACKEND_FRIENDLY_NAMES[conf.backend], inline: true });
     
     return new EmbedBuilder()
+        .setTimestamp()
         .setColor(CONFIG.EMBED_COLOR)
         .setTitle((typeof conf.name == "string") ? conf.name : null)
         .setThumbnail(conf.avatarUrl)

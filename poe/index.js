@@ -297,6 +297,7 @@ class Poe {
     connectSocket(channelData) {
         const socket = new WebSocket(`wss://${this.socketServer}/up/${channelData.boxName}/updates?min_seq=${channelData.minSeq}&channel=${channelData.channel}&hash=${channelData.channelHash}`);
         
+        socket.on("error", () => console.error);
         socket.on("open", () => this.log("Websocket connected"));
         socket.on("close", () => this.connectSocket(channelData));
 
@@ -449,13 +450,16 @@ class Poe {
             
             let selfMessage = {};
 
-            this.socket.on("error", err => {
+            this.socket.once("unexpected-response", err => {
                 this.socket.removeEventListener("message");
-                this.socket.removeEventListener("error");
 
-                console.error(err);
-                
-                return reject(`Failed to send message\n${err}`);
+                reject(`Failed to send message\n${err}`);
+            });
+
+            this.socket.once("error", err => {
+                this.socket.removeEventListener("message");
+
+                reject(`Failed to send message\n${err}`);
             });
         
             this.socket.on("message", data => {
@@ -507,7 +511,6 @@ class Poe {
                         // END JAILBREAK STUFF
                     
                         this.socket.removeEventListener("message");
-                        this.socket.removeEventListener("error");
 
                         const responseData = { selfMessage, aiMessage: messageData }
                         this.messageHistory.push(responseData);
