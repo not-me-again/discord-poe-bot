@@ -481,7 +481,7 @@ async function handleMessage(channel, author, message) {
         if (threadId != channelId)
             return;
         else {
-            const thread = interaction?.channel;
+            const thread = message?.channel;
             if (thread)
                 thread.setName(`${displayName} - (${authorId})`);
         }
