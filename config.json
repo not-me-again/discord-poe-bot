@@ -1,0 +1,32 @@
+{
+    "SHOW_DEBUG_LOGS": false,
+
+    "DEFAULT_BLURB": "language model trained by OpenAI",
+    "DEFAULT_PRONOUNS": {
+        "personal": "they",
+        "intensive": "them",
+        "possessive": "their"
+    },
+    "DEFAULT_PERSONALITY": "",
+    "DEFAULT_BACKEND": "gpt-4",
+    "DEFAULT_DISPLAY_NAME": "GPT-4",
+    "DEFAULT_AVATAR_URL": "https://poe.com/_next/image?url=%2F_next%2Fstatic%2Fmedia%2FopenAIBlue.915c0399.png&w=256&q=100",
+
+    "EMBED_COLOR": 2829617,
+    "BASE_CHANNEL_ID": "1088994209471660182",
+    "SERVER_ID": "789016829371875348",
+    "PUBLIC_CONFIG_CHANNEL_ID": "1089258063451656342",
+    "LOADING_EMOJI_ID": "1089762550578688030",
+
+    "WEBHOOK_ID": "1089288331390619750",
+    "WEBHOOK_TOKEN": "DiscordWebhookToken",
+
+    "BOT_ID": "1089265249582071899",
+    "BOT_TOKEN": "DiscordBotToken",
+    "AUTO_IDLE": true,
+    
+    "USE_WHITELIST": false,
+    "WHITELISTED_USERS": [ "935127235680153611" ],
+
+    "BLACKLISTED_USERS": []
+}
