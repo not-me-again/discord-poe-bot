@@ -483,7 +483,7 @@ async function handleMessage(channel, author, message) {
         else {
             const thread = message?.channel;
             if (thread)
-                thread.setName(`${displayName} - (${authorId})`);
+                thread.setName(`${botConfig.displayName} - (${authorId})`);
         }
 
         const loadingReaction = await message.react(CONFIG.LOADING_EMOJI_ID);
