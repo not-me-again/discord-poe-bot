@@ -329,7 +329,7 @@ class Poe {
         if (typeof home_req?.data != "string")
             throw new Error("Failed to send home request");
         
-        const nextId = home_req.data.match(/(?<=\/_next\/static\/)[a-zA-Z0-9\-]{0,}(?=\/_buildManifest\.js)/i).toString();
+        const nextId = home_req?.data?.match(/(?<=\"buildid\"\:\s*\").+?(?=\")/si)?.toString();
         if ((typeof nextId != "string") || (nextId.length <= 0))
             throw new Error("Failed to get next.js id");
 
@@ -444,7 +444,7 @@ class Poe {
     sendMessage(content, isRetry) {
         return new Promise((resolve, reject) => {
             if (this.isReplying)
-                throw new Error("Already replying!");
+                return reject("Already replying!");
     
             this.isReplying = true;
             
@@ -545,8 +545,9 @@ class Poe {
                     selfMessage = req?.data?.data?.messageEdgeCreate?.message?.node;
                     
                     if (typeof selfMessage != "object") {
-                        this.log("Got:", req.data);
                         this.socket.removeEventListener("message");
+                        
+                        this.log("Got:", req.data);
                         reject("Failed to send message");
                     }
                 }).catch(reject);
@@ -554,6 +555,7 @@ class Poe {
                 this.isReplying = false;
 
                 this.socket.removeEventListener("message");
+
                 console.error("Error occurred:", err);
                 reject(err);
             }
