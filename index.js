@@ -470,9 +470,6 @@ async function handleMessage(channel, author, message) {
 
         const authorId = author.id;
 
-        // todo: better logging
-        logMessage(authorId, author.tag, content);
-
         let { botConfig, poeInstance, dbHandler } = await cacheSanityCheck(authorId);
 
         let messageHistory = botConfig.messageHistory;
@@ -485,6 +482,8 @@ async function handleMessage(channel, author, message) {
             if (thread && (typeof botConfig.displayName == "string"))
                 thread.setName(`${author.username} & ${botConfig.displayName} - (${authorId})`);
         }
+        
+        logMessage(authorId, author.tag, content);
 
         const loadingReaction = await message.react(CONFIG.LOADING_EMOJI_ID);
 
