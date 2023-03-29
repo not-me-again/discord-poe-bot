@@ -479,6 +479,8 @@ async function cacheSanityCheck(authorId, interaction) {
 }
 
 async function handleMessage(channel, author, message) {
+    let loadingReaction;
+
     try {
         lastMessage = Date.now();
 
@@ -506,7 +508,7 @@ async function handleMessage(channel, author, message) {
         
         logMessage(authorId, author.tag, content);
 
-        const loadingReaction = await message.react(CONFIG.LOADING_EMOJI_ID);
+        loadingReaction = await message.react(CONFIG.LOADING_EMOJI_ID);
 
         // execute inference
         const responseMessages = await poeInstance.sendMessage(content);
@@ -516,8 +518,6 @@ async function handleMessage(channel, author, message) {
             username: dbHandler.get("displayName")
         }
 
-        loadingReaction.remove();
-
         await handleResponse(responseMessages, channel, threadId, webhookOptions, authorId, message, messageHistory);
 
         dbHandler.set({ messageHistory, userId: authorId });
@@ -525,6 +525,9 @@ async function handleMessage(channel, author, message) {
         console.error(err);
         await channel.send("```ansi\n\u001b[0;31m" + err.toString() + "\n```");
         return;
+    } finally {
+        if (typeof loadingReaction == "object")
+            loadingReaction.remove();
     }
 }
 

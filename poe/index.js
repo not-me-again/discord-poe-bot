@@ -455,6 +455,7 @@ class Poe {
             this.timeoutDaemon = setTimeout(() => {
                 if (!this.isReplying)
                     return;
+                this.isReplying = false;
 
                 this.socket.removeEventListener("message");
                 this.socket.removeEventListener("error");
@@ -466,6 +467,8 @@ class Poe {
             let selfMessage = {};
 
             this.socket.once("unexpected-response", err => {
+                this.isReplying = false;
+
                 this.socket.removeEventListener("error");
                 this.socket.removeEventListener("message");
 
@@ -473,6 +476,8 @@ class Poe {
             });
 
             this.socket.once("error", err => {
+                this.isReplying = false;
+
                 this.socket.removeEventListener("unexpected-response");
                 this.socket.removeEventListener("message");
 
@@ -516,7 +521,7 @@ class Poe {
                         this.isReplying = false;
 
                         messageData.author = this.botType.NAME;
-                        
+
                         // JAILBREAK STUFF
                         const text = messageData.text;
                         const split = text.split(JAILRBEAK_SEPERATOR);
@@ -539,7 +544,9 @@ class Poe {
                     }
                 } catch(err) {
                     this.isReplying = false;
+
                     console.warn("Got:", Buffer.from(data).toString("utf-8"));
+
                     clearTimeout(this.timeoutDaemon);
                     reject(err);
                 }
@@ -565,17 +572,22 @@ class Poe {
                     selfMessage = req?.data?.data?.messageEdgeCreate?.message?.node;
                     
                     if (typeof selfMessage != "object") {
+                        this.isReplying = false;
+
                         this.socket.removeEventListener("message");
                         clearTimeout(this.timeoutDaemon);
+
                         this.log("Got:", req.data);
+
                         reject("Failed to send message");
                     }
                 }).catch(reject);
             } catch(err) {
                 this.isReplying = false;
+
                 this.socket.removeEventListener("message");
-                console.error("Error occurred:", err);
                 clearTimeout(this.timeoutDaemon);
+
                 reject(err);
             }
         });
