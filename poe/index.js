@@ -554,7 +554,7 @@ class Poe {
                         const text = messageText;
                         const split = text.split(JAILRBEAK_SEPERATOR);
                         if (split.length > 1)
-                            messageData.text = split[1].replace(CLASSIC_REGEX, "").replace(/(?<=\n{2}).+/gmi, "").toString();
+                            messageData.text = split[1].replace(CLASSIC_REGEX, "").toString();
                         else
                             if (!isRetry && !text.includes(JAILRBEAK_SEPERATOR))
                                 return this.deleteMessage(messageData.messageId, selfMessage.messageId).then(() =>
