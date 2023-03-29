@@ -41,6 +41,23 @@ const client = new Client({
     ]
 });
 
+const HANDLE_CATASTROPHIC = (err) => {
+    console.error(err);
+    try {
+        const channel = client.channels.cache.find(c => c.id == CONFIG.ERROR_LOG_CHANNEL_ID);
+        if (typeof channel == "object")
+            channel.send({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(CONFIG.EMBED_COLOR)
+                        .setTitle("Catastrophic failure")
+                        .setDescription("```ansi\n\u001b[0;31m" + err.toString() + "\n```")
+                        .setTimestamp()
+                ]
+            });
+    } finally {}
+}
+
 // register slash commands
 const updateSlashCommands = require("./updateSlashCommands");
 
@@ -397,6 +414,10 @@ async function cacheSanityCheck(authorId, interaction) {
     if (typeof personality != "string")
         personality = CONFIG.DEFAULT_PERSONALITY;
 
+    let exampleConvo = dbHandler.get("exampleConvo");
+    if (typeof personality != "string")
+        exampleConvo = CONFIG.DEFAULT_EXAMPLE_CONVO;
+
     let messageHistory = dbHandler.get("messageHistory");
     if (typeof messageHistory != "object")
         messageHistory = [];
@@ -421,7 +442,7 @@ async function cacheSanityCheck(authorId, interaction) {
         if (typeof botType != "string")
             throw new Error("Invalid bot type");
 
-        poeInstance = new Poe(session, BOT_TYPES[botType], startingPrompt, DO_DEBUG_LOGGING);
+        poeInstance = new Poe(session, BOT_TYPES[botType], startingPrompt, exampleConvo, DO_DEBUG_LOGGING);
         await poeInstance.init();
 
         cache.poeInstance = poeInstance;
@@ -1348,9 +1369,9 @@ client.on("interactionCreate", async interaction => {
 });
 
 // a++ error handling
-client.on("error", console.error);
-process.on("uncaughtException", console.error);
-//process.on("unhandledRejection", console.error);
+client.on("error", HANDLE_CATASTROPHIC);
+process.on("uncaughtException", HANDLE_CATASTROPHIC);
+process.on("unhandledRejection", HANDLE_CATASTROPHIC);
 
 function login() {
     client.login(BOT_TOKEN);
