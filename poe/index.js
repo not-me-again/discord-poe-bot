@@ -524,6 +524,11 @@ class Poe {
 
                         // JAILBREAK STUFF
                         const text = messageData.text;
+
+                        if (text == this.lastMessageText)
+                            return;
+                        this.lastMessageText = text;
+
                         const split = text.split(JAILRBEAK_SEPERATOR);
                         if (split.length > 1)
                             messageData.text = split[1].replace(CLASSIC_REGEX, "").toString();
