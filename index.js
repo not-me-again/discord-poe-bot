@@ -216,12 +216,20 @@ setInterval(() => {
         client.user.setPresence({ status: "idle" });
 }, 15e3);
 
-function logMessage(logId, authorName, message) {
+function logMessage(logId, authorName, discordMessage, aiMessage) {
     let fullMessage = `[${authorName}]`;
-    if (typeof message == "string")
-        fullMessage += ` ${message}`;
+
+    if (typeof discordMessage == "string")
+        fullMessage += ` ${discordMessage}`;
     else
-        fullMessage = `${fullMessage}[${message.id}] ${message.content}`;
+        fullMessage = `${fullMessage}[${discordMessage.id}] ${discordMessage.content}`;
+    
+    if (typeof aiMessage == "object") {
+        const { currentMood } = aiMessage;
+        if ((typeof currentMood == "object") && (currentMood != "unknown"))
+            fullMessage += ` [MOOD: ${currentMood.join(", ")}]`;
+    }
+
     console.log(`[${logId}]${fullMessage}`);
     writeLog(logId, fullMessage);
 }
@@ -314,7 +322,7 @@ async function handleResponse(messages, channel, threadId, webhookOptions, autho
     } else
         botMessage = await channel.send(aiResponse);
     
-    logMessage(authorId, webhookOptions ? webhookOptions.username : client.user.username, botMessage);
+    logMessage(authorId, webhookOptions ? webhookOptions.username : client.user.username, botMessage, aiMessage);
 
     for (let messageData of [ selfMessage, aiMessage ]) {
         const isUserMessage = messageData.author == "human";
@@ -323,7 +331,8 @@ async function handleResponse(messages, channel, threadId, webhookOptions, autho
             poeId: messageData.messageId,
             timestamp: messageData.creationTime,
             author: isUserMessage ? "user" : "ai",
-            text: messageData.text
+            text: messageData.text,
+            currentMood: isUserMessage ? undefined : messageData.currentMood
         });
     }
 }
@@ -415,7 +424,7 @@ async function cacheSanityCheck(authorId, interaction) {
         personality = CONFIG.DEFAULT_PERSONALITY;
 
     let exampleConvo = dbHandler.get("exampleConvo");
-    if (typeof personality != "string")
+    if (typeof exampleConvo != "string")
         exampleConvo = CONFIG.DEFAULT_EXAMPLE_CONVO;
 
     let messageHistory = dbHandler.get("messageHistory");
@@ -430,6 +439,7 @@ async function cacheSanityCheck(authorId, interaction) {
         pronouns,
         blurb,
         personality,
+        exampleConvo,
         messageHistory
     }
 
@@ -1146,42 +1156,25 @@ async function handleStringSelectMenu(interaction) {
     const selection = interaction.values[0];
     if (typeof selection != "string")
         return;
-    
-    const message = interaction.message;
-    if (typeof message != "object")
-        return;
-    const row = message.components[0];
-    if (typeof row != "object")
-        return;
-    const dropdown = row.components[0];
-    if (typeof dropdown != "object")
-        return;
-    const dropdownData = dropdown.data;
-    if (typeof dropdownData != "object")
-        return;
-    
-    dropdownData.disabled = true;
 
+    let newValue = "nothing";
     let prop = "Nothing";
     if (interaction.customId == "backend") {
-        dropdownData.placeholder = BACKEND_FRIENDLY_NAMES[selection];
-
+        newValue = BACKEND_FRIENDLY_NAMES[selection];
         dbHandler.set({ backend: selection, messageHistory: [] });
 
         prop = "Model";
     } else if (interaction.customId == "pronouns") {
         const pronouns = FRIENDLY_PRONOUNS[selection];
-
-        dropdownData.placeholder = `${pronouns.personal}/${pronouns.intensive}/${pronouns.possessive}`;
-
+        newValue = `${pronouns.personal}/${pronouns.intensive}/${pronouns.possessive}`;
         dbHandler.set({ pronouns, messageHistory: [] });
 
         prop = "Pronouns";
     }
 
-    interaction.update({
-        content: prop + " changed successfully, conversation will now reset",
-        components: [ row ],
+    updateInteraction(interaction, {
+        content: `${prop} changed to \`${newValue}\`\nConversation will now reset`,
+        components: [],
         ephemeral: true
     });
 
