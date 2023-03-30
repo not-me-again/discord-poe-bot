@@ -535,18 +535,20 @@ class Poe {
                         this.socket.removeEventListener("error");
 
                         // BEGIN MOOD EVALUATION //
-                        let characterMood = "unknown";
-                        const matches = Array.from(messageText.matchAll(DEFAULTS.MOOD_CAPTURE_REGEX));
-                        if (matches.length >= 1)
-                            if (matches[0].length >= 3)
-                                characterMood = matches[0][2];
+                        let characterMoods = [];
+                        const moodMatches = Array.from(messageText.matchAll(DEFAULTS.MOOD_CAPTURE_REGEX));
+                        if (moodMatches.length >= 1)
+                            for (let match of moodMatches)
+                                if (match.length >= 3)
+                                    for (let mood of match[2].split(/,\s*/))
+                                        characterMoods.push(mood);
                         // END MOOD EVALUATION //
                         
                         // BEGIN MESSAGEDATA MODIFICATIONS //
                         messageText = messageText.replace(DEFAULTS.MOOD_CAPTURE_REGEX, "");
                         delete messageData.linkifiedText;
                         delete messageData.suggestedReplies;
-                        messageData.currentMood = characterMood.split(/,\s*/);
+                        messageData.currentMood = characterMoods;
                         messageData.author = this.botType.NAME;
                         // END MESSAGEDATA MODIFICATIONS //
 
