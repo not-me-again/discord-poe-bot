@@ -306,7 +306,7 @@ async function createAuthToken(userId, statusMessage) {
     }
 }
 
-async function handleResponse(messages, channel, threadId, webhookOptions, authorId, userMessage, messageHistory) {
+async function handleResponse(messages, channel, threadId, webhookOptions, authorId, userMessageId, messageHistory) {
     const { aiMessage, selfMessage } = messages;
     const aiResponse = aiMessage.text;
     
@@ -327,7 +327,7 @@ async function handleResponse(messages, channel, threadId, webhookOptions, autho
     for (let messageData of [ selfMessage, aiMessage ]) {
         const isUserMessage = messageData.author == "human";
         messageHistory.push({
-            discordId: isUserMessage ? (userMessage ? userMessage.id : "-1") : botMessage.id,
+            discordId: isUserMessage ? (userMessageId ? userMessageId : "-1") : botMessage.id,
             poeId: messageData.messageId,
             timestamp: messageData.creationTime,
             author: isUserMessage ? "user" : "ai",
@@ -478,6 +478,7 @@ async function cacheSanityCheck(authorId, interaction) {
                 "text": aiMessage.text
             }
         ]
+
         dbHandler.set("messageHistory", messageHistory);
     }
 
@@ -525,10 +526,10 @@ async function handleMessage(channel, author, message) {
 
         let webhookOptions = {
             avatarURL: dbHandler.get("avatarUrl"),
-            username: dbHandler.get("displayName")
+            username: dbHandler.get("displayName") + (CONFIG.SHOW_DEBUG_LOGS ? " [beta]" : "")
         }
 
-        await handleResponse(responseMessages, channel, threadId, webhookOptions, authorId, message, messageHistory);
+        await handleResponse(responseMessages, channel, threadId, webhookOptions, authorId, message.id, messageHistory);
 
         dbHandler.set({ messageHistory, userId: authorId });
     } catch(err) {
@@ -657,7 +658,7 @@ async function handleClearContext(partialContext) {
 
     logReset(authorId);
 
-    await handleResponse(response, channel, threadId, webhookOptions, authorId, message, messageHistory);
+    await handleResponse(response, channel, threadId, webhookOptions, authorId, message.id, messageHistory);
 
     dbHandler.set("messageHistory", messageHistory);
 }
@@ -1181,31 +1182,98 @@ async function handleStringSelectMenu(interaction) {
     await handleRestartSession(cache, interaction);
 }
 
-async function handleRegenerateResponse(interaction) {
-    await updateInteraction(interaction, { content: "NOT_IMPLEMENTED", ephemeral: true });
+function getCachedMessagesByDiscordId(cache, messageId) {
+    const { dbHandler } = cache;
+    const messageHistory = dbHandler.get("messageHistory");
+    const cachedMessageIndex = messageHistory.findIndex(m => m.discordId == messageId);
 
-    // TODO!!!!!!!!!!!
-    const message = interaction.targetMessage;
+    const botMessage = messageHistory[cachedMessageIndex];
+    if (botMessage.author != "ai")
+        throw new Error("Failed to get bot message");
+    
+    const userMessage = messageHistory[cachedMessageIndex - 1];
+    if (userMessage.author != "user")
+        throw new Error("Failed to get user message");
+
+    return [ botMessage, userMessage ];
 }
 
-async function handleDeleteMessageCommand(interaction) {
-    const cache = cacheSanityCheck(interaction.user.id, interaction);
+async function handleRegenerateResponseCommand(interaction) {
+    const cache = await cacheSanityCheck(interaction.user.id, interaction);
     if ((typeof cache != "object") || (!cache.poeInstance) || (!cache.dbHandler))
         return;
-    const { poeInstance, dbHandler } = cache;
-
-    console.log(message, message.thread)
+    const { botConfig, poeInstance, dbHandler } = cache;
 
     const message = interaction.targetMessage;
     if (!message.webhookId)
         return;
 
-    if (message.thread.id != dbHandler.get("threadId"))
+    const threadId = dbHandler.get("threadId");
+    if (message.channelId != threadId)
         return;
 
+    const messageId = message.id;
+    const [ cachedBotMessage, cachedUserMessage ] = getCachedMessagesByDiscordId(cache, messageId);
+    if ((typeof cachedBotMessage != "object") || (typeof cachedUserMessage != "object"))
+        return await updateInteraction(interaction, {
+            content: "Unknown message"
+        });
+
+    if (!await poeInstance.deleteMessage(cachedBotMessage.poeId, cachedUserMessage.poeId))
+        return await updateInteraction(interaction, {
+            content: "Failed to delete message"
+        });
+    
     await message.delete();
+
+    let messageHistory = botConfig.messageHistory;
+
+    const responseMessages = await poeInstance.sendMessage(cachedUserMessage.text);
+
+    let webhookOptions = {
+        avatarURL: dbHandler.get("avatarUrl"),
+        username: dbHandler.get("displayName") + (CONFIG.SHOW_DEBUG_LOGS ? " [beta]" : "")
+    }
+
+    await handleResponse(responseMessages, message.channel, threadId, webhookOptions, interaction.user.id, cachedUserMessage.discordId, messageHistory);
+
+    dbHandler.set("messageHistory", messageHistory);
     
     await interaction.deleteReply();
+}
+
+async function handleDeleteMessageCommand(interaction) {
+    const cache = await cacheSanityCheck(interaction.user.id, interaction);
+    if ((typeof cache != "object") || (!cache.poeInstance) || (!cache.dbHandler))
+        return;
+    const { poeInstance, dbHandler } = cache;
+
+    const message = interaction.targetMessage;
+    if (!message.webhookId)
+        return;
+
+    if (message.channelId != dbHandler.get("threadId"))
+        return;
+
+    const messageId = message.id;
+    const [ cachedBotMessage, cachedUserMessage ] = getCachedMessagesByDiscordId(cache, messageId);
+    if ((typeof cachedBotMessage != "object") || (typeof cachedUserMessage != "object"))
+        return await updateInteraction(interaction, {
+            content: "Unknown message"
+        });
+
+    if (await poeInstance.deleteMessage(cachedBotMessage.poeId, cachedUserMessage.poeId)) {
+        await message.delete();
+
+        const userMessage = message.channel.messages.cache.find(m => m.id == cachedUserMessage.discordId);
+        if (typeof userMessage == "object")
+            await userMessage.delete();
+
+        await interaction.deleteReply();
+    } else
+        await updateInteraction(interaction, {
+            content: "Failed to delete message"
+        });
 }
 
 async function handleContextMenuCommand(interaction) {
@@ -1213,7 +1281,7 @@ async function handleContextMenuCommand(interaction) {
     if (cmd.startsWith("delete"))
         await handleDeleteMessageCommand(interaction);
     else if (cmd.startsWith("regenerate"))
-        await handleRegenerateResponse(interaction);
+        await handleRegenerateResponseCommand(interaction);
 }
 
 const AUTOCOMPLETE_ALLOWED_SUBCOMMANDS = [ "view", "save", "load", "delete", "publish" ]
