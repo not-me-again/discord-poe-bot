@@ -678,11 +678,16 @@ const CONFIG_PROPS = [
     "avatarUrl",
     "pronouns",
     "blurb",
+    "exampleConvo",
     "personality"
 ];
 
 async function handleConfigLoad(cache, interaction, id) {
     const { poeInstance, dbHandler } = cache;
+    
+    const threadId = dbHandler.get("threadId");
+    if (typeof threadId != "string")
+        return updateInteraction(interaction, { content: "No active chat" });
 
     const options = interaction.options;
     const configId = (typeof id == "string") ? id : options.getString("id");
@@ -1382,9 +1387,9 @@ async function handleButtonInteraction(interaction) {
         return;
 
     if (buttonId == "initThreadChat")
-        handleThreadInitButton(cache, interaction);
+        await handleThreadInitButton(cache, interaction);
     else if (buttonId.startsWith("applyConfig_"))
-        handleLoadConfigButton(cache, interaction);
+        await handleLoadConfigButton(cache, interaction);
 }
 
 async function handleInteractionFailed(interaction, err) {
