@@ -545,7 +545,7 @@ class Poe {
                         // END MOOD EVALUATION //
                         
                         // BEGIN MESSAGEDATA MODIFICATIONS //
-                        messageText = messageText.replace(DEFAULTS.MOOD_CAPTURE_REGEX, "");
+                        messageData.text = messageText.replace(DEFAULTS.MOOD_CAPTURE_REGEX, "");
                         delete messageData.linkifiedText;
                         delete messageData.suggestedReplies;
                         messageData.currentMood = characterMoods;
@@ -553,7 +553,7 @@ class Poe {
                         // END MESSAGEDATA MODIFICATIONS //
 
                         // BEGIN JAILBREAK STUFF //
-                        const text = messageText;
+                        const text = messageData.text;
                         const split = text.split(JAILRBEAK_SEPERATOR);
                         if (split.length > 1)
                             messageData.text = split[1].replace(CLASSIC_REGEX, "").toString();
