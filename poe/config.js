@@ -46,7 +46,8 @@ module.exports = {
         "provocative",
         "submissive",
         "dominant",
-        "orgasmic"
+        "orgasmic",
+        "sexual"
     ],
     RP_FAIL_MOODS: [
         "neutral"

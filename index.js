@@ -745,7 +745,7 @@ async function handleConfigSave(cache, interaction) {
 
     let savedConfigs = dbHandler.get("savedConfigurations");
     
-    let idx = savedConfigs.findIndex(conf => (conf.name == name) || (conf.id == name));
+    let idx = savedConfigs.findIndex(conf => conf.name == name);
     if (typeof idx != "number")
         idx = savedConfigs.length;
 
@@ -883,7 +883,12 @@ async function handleConfigView(cache, interaction) {
     const { poeInstance, dbHandler } = cache;
 
     const options = interaction.options;
-    const id = options.getString("id");
+    const requestedId = options.getString("id");
+
+    let id = requestedId;
+    for (const conf of dbHandler.get("savedConfigurations"))
+        if (conf.name == requestedId)
+            id = conf.id;
 
     const confProps = [ ...CONFIG_PROPS, "name", "public", "authorId", "configId" ]
 
@@ -1328,7 +1333,7 @@ async function handleConfigAutocomplete(interaction, cache) {
 
         let suggestions = savedConfigs.filter(conf => conf.name.startsWith(focusedValue));
 
-        return suggestions.map(conf => ({ name: conf.name, value: conf.id }));
+        return suggestions.map(conf => ({ name: conf.name, value: conf.name }));
     }
 }
 
