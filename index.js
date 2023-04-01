@@ -1054,7 +1054,7 @@ async function handleConfig(cache, interaction) {
                         description: "Newest GPT model, good at long responses, logic & reasoning",
                         value: "gpt-4",
                     },
-                    {
+                    /*{ // not ready for c.ai purposes
                         label: "Claude",
                         description: "Anthropic's transformer model, good at creative writing",
                         value: "claude",
@@ -1063,7 +1063,7 @@ async function handleConfig(cache, interaction) {
                         label: "Claude+",
                         description: "Multilingual & faster responses",
                         value: "claude+",
-                    }
+                    }*/
                 );
 
             await updateInteraction(interaction, {
