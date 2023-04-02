@@ -426,8 +426,10 @@ async function cacheSanityCheck(authorId, interaction) {
     let cache = userCache[authorId];
     if ((typeof cache != "object") || (typeof cache.dbHandler != "object")) {
         const dbHandler = new UserDB(authorId);
-        cache = { poeInstance: null, dbHandler }
+        cache = { poeInstance: null, dbHandler, ttl: CONFIG.DEFAULT_CACHE_TTL }
     }
+
+    cache.lastUsed = Date.now();
 
     let { poeInstance, dbHandler } = cache;
 
@@ -1508,6 +1510,15 @@ process.on("unhandledRejection", HANDLE_CATASTROPHIC);
 function login() {
     client.login(BOT_TOKEN);
 }
+
+setInterval(() => {
+    for (let i in userCache) {
+        const cached = userCache[i];
+        const { lastUsed, ttl } = cached;
+        if ((typeof lastUsed != "number") || ((Date.now() - lastUsed) > ttl))
+            delete userCache[i];
+    }
+}, 15e3);
 
 if (process.argv.find(p => p == "--update-commands"))
     deploySlashCommands().then(login);
