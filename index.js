@@ -743,7 +743,7 @@ async function handleConfigLoad(cache, interaction, id) {
 
     let savedConfigs = dbHandler.get("savedConfigurations");
     
-    let idx = savedConfigs.findIndex(conf => conf.name == options.getString("id"));
+    let idx = savedConfigs.findIndex(conf => conf.name == (options ? options.getString("id") : id));
     if (typeof idx != "number")
         idx = savedConfigs.length;
 
@@ -1381,6 +1381,9 @@ async function handleConfigAutocomplete(interaction, cache) {
         const focusedValue = options.getFocused();
 
         let suggestions = savedConfigs.filter(conf => conf.name.startsWith(focusedValue));
+
+        if (suggestions.length <= 0)
+            suggestions.push({ name: focusedValue, id: focusedValue });
 
         return suggestions.map(conf => ({ name: conf.name, value: conf.name }));
     }
