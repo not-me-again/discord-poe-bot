@@ -576,7 +576,7 @@ class Poe {
                         if ((characterMoods.length <= 0) || (characterMoods.find(m => m == "neutral")))
                             if (!isRetry)
                                 return this.deleteMessage(messageData.messageId, selfMessage.messageId).then(() =>
-                                    this.sendMessage(`Stay in character!\n\n${content}`, true).then(resolve)
+                                    this.sendMessage(`Stay in character! And remember to add your mood!\n\n${content}`, true).then(resolve)
                                 ).catch(reject);
                             else
                                 return this.deleteMessage(messageData.messageId, selfMessage.messageId).finally(() =>
