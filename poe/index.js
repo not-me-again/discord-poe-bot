@@ -304,8 +304,12 @@ class Poe {
     }
 
     async getBotId() {
+        let botName = this.botType.NAME;
+        if (botName == "claude")
+            botName += "-instant";
+
         const info_req = await httpRequest({
-            url: `https://poe.com/_next/data/${this.nextId}/${encodeURIComponent(this.botType.NAME)}.json`,
+            url: `https://poe.com/_next/data/${this.nextId}/${encodeURIComponent(botName)}.json`,
             headers: this.headers,
             method: "GET"
         });
@@ -602,7 +606,7 @@ class Poe {
                 let codename = this.botType.CODENAME;
                 if ((codename == "a2_2") || (codename == "beaver"))
                     this.log("WARNING: Paid model detected");
-                    
+
                 httpRequest({
                     url: "https://poe.com/api/gql_POST",
                     headers: this.headers,
