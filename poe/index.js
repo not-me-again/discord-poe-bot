@@ -599,6 +599,10 @@ class Poe {
             });
             
             try {
+                let codename = this.botType.CODENAME;
+                if ((codename == "a2_2") || (codename == "beaver"))
+                    this.log("WARNING: Paid model detected");
+                    
                 httpRequest({
                     url: "https://poe.com/api/gql_POST",
                     headers: this.headers,
@@ -606,7 +610,7 @@ class Poe {
                         "queryName": "chatHelpers_sendMessageMutation_Mutation",
                         "variables": {
                             "chatId": this.chatId,
-                            "bot": /*this.botType.CODENAME*/"chinchilla",
+                            "bot": codename,
                             "query": content,
                             "source": null,
                             "withChatBreak": false
