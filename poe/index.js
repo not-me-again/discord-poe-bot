@@ -545,11 +545,11 @@ class Poe {
                             for (let match of moodMatches)
                                 if (match.length >= 3)
                                     for (let mood of match[2].split(/,\s*/))
-                                        characterMoods.push(mood);
+                                        characterMoods.push(mood.trim());
                         // END MOOD EVALUATION //
                         
                         // BEGIN MESSAGEDATA MODIFICATIONS //
-                        messageData.text = messageText.replace(DEFAULTS.MOOD_CAPTURE_REGEX, "");
+                        messageData.text = messageText.replace(DEFAULTS.MOOD_CAPTURE_REGEX, "")/*.replace(/[ ]?(\*)[ ]?/, "$1")*/;
                         delete messageData.linkifiedText;
                         delete messageData.suggestedReplies;
                         messageData.currentMood = characterMoods;
